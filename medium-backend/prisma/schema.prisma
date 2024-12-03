@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgres://postgres:12345678@localhost:5432/medium"
+}
+
+model Users {
+  id              Int           @id @default(autoincrement())
+  fullname        String
+  email           String        @unique
+  followers       UsersFollow[] @relation("UserFollowers")
+  following       UsersFollow[] @relation("UserFollowing")
+  followers_count Int           @default(0)
+  description     String
+  password        String
+  blogs           Blogs[]       @relation("AuthorBlogs") // Blogs authored by the user
+  likedBlogs      Blogs[]       @relation("LikedBlogs") // Blogs liked by the user
+  savedBlogs      Blogs[]       @relation("SavedBlogs") // Blogs saved by the user
+  comments        Comments[]    @relation("CommentAuthor") // Comments made by the user
+}
+
+model UsersFollow {
+  id          Int     @id @default(autoincrement())
+  followerId  Int
+  followingId Int
+  follower    Users @relation("UserFollowers",fields: [followerId],references: [id])
+  following   Users @relation("UserFollowing",fields: [followingId],references: [id])
+  @@unique([followerId, followingId])
+}
+model Blogs {
+  id          Int    @id @default(autoincrement())
+  title       String
+  subtitle    String  
+  content     String
+  likes_count Int    @default(0)
+  saved_count Int        @default(0)
+  author      Users      @relation("AuthorBlogs", fields: [authorId], references: [id], onDelete: Cascade)
+  authorId    Int
+  createdAt   DateTime   @default(now())
+  likedBy     Users[]    @relation("LikedBlogs")
+  savedBy     Users[]    @relation("SavedBlogs")
+  comments    Comments[] @relation("BlogComments")
+  tags        Tags[]     @relation("BlogTags")
+}
+
+model Tags {
+  id    Int     @id @default(autoincrement())
+  tag   String  @unique
+  blogs Blogs[] @relation("BlogTags")
+}
+
+model Comments {
+  id        Int      @id @default(autoincrement())
+  content   String
+  createdAt DateTime @default(now())
+  blog      Blogs    @relation("BlogComments", fields: [blogId], references: [id], onDelete: Cascade)
+  blogId    Int
+  author    Users    @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  Int
+}
